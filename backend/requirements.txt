@@ -15,8 +15,8 @@ celery[redis]==5.3.6
 
 # AI / LangGraph
 anthropic==0.25.1
-langgraph==0.0.55
-langchain-core==0.1.52
+langgraph==0.1.19
+langchain-core==0.2.43
 
 # Data
 pandas==2.2.2

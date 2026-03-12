@@ -25,14 +25,14 @@ celery_app.conf.update(
     task_track_started=True,
     beat_schedule={
         "nightly-pipeline": {
-            "task": "queue.tasks.run_scheduled_pipeline",
+            "task": "celery_tasks.tasks.run_scheduled_pipeline",
             "schedule": crontab(hour=0, minute=0),  # midnight UTC
         },
     },
 )
 
 
-@celery_app.task(name="queue.tasks.run_scheduled_pipeline", bind=True, max_retries=2)
+@celery_app.task(name="celery_tasks.tasks.run_scheduled_pipeline", bind=True, max_retries=2)
 def run_scheduled_pipeline(self):
     """
     Nightly scheduled run using the last uploaded dataset in the DB.

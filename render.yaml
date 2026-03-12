@@ -1,0 +1,83 @@
+services:
+  - type: web
+    name: finagent-backend
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: free
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: SECRET_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: SENDGRID_API_KEY
+        sync: false
+      - key: SENDGRID_FROM_EMAIL
+        sync: false
+      - key: ALERT_EMAIL_RECIPIENT
+        sync: false
+      - key: DATABASE_URL
+        fromDatabase:
+          name: finagent-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          name: finagent-redis
+          type: redis
+          property: connectionString
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+
+  - type: worker
+    name: finagent-worker
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: free
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: finagent-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          name: finagent-redis
+          type: redis
+          property: connectionString
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: SECRET_KEY
+        sync: false
+    startCommand: celery -A celery_tasks.tasks worker --loglevel=info --concurrency=2
+
+  - type: worker
+    name: finagent-beat
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: free
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: finagent-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          name: finagent-redis
+          type: redis
+          property: connectionString
+      - key: SECRET_KEY
+        sync: false
+    startCommand: celery -A celery_tasks.tasks beat --loglevel=info
+
+  - type: redis
+    name: finagent-redis
+    plan: free
+    maxmemoryPolicy: allkeys-lru
+
+databases:
+  - name: finagent-db
+    plan: free
+    databaseName: finagent_db
+    user: finagent
